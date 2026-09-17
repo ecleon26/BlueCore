@@ -2,6 +2,8 @@
 
 **Empire Protocol** is a high-fidelity, real-time multiplayer gaming platform featuring AI-driven dynamic challenges and gameplay insights. Built for high performance and deep immersion, it combines 3D graphics, real-time strategy, and intelligent coaching.
 
+![Architecture](assets/photo_6154558388960956786_y.jpg)
+
 ## 🚀 Overview
 
 This monorepo contains a unified ecosystem for multiple games (Cognitive & Finance) sharing a single high-performance backend.
