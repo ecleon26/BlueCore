@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire Protocol | Level 1: Survival Phase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script type="module" crossorigin src="/assets/index-3XNIReBL.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D1bwkSKs.css">
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- GLOBAL LOADER -->
+        <div id="global-loader" class="hidden">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <div id="loader-status">INITIALIZING SYSTEM...</div>
+            </div>
+        </div>
+
+        <!-- HUD Overlay (Hidden by default) -->
+        <div id="hud" class="hidden">
+            <div class="hud-header">
+                <div class="logo">EMPIRE PROTOCOL</div>
+                <div class="metrics">
+                    <div class="metric-item" title="Cash Reserve">
+                        <span class="icon icon-img"><img src="./assets/coin.png" alt="Cash"
+                                class="metric-icon-img"></span>
+                        <span class="label">CASH</span>
+                        <span id="cash-value" class="value">$10,000</span>
+                    </div>
+                    <div class="metric-item" title="Total Revenue">
+                        <span class="icon icon-img"><img src="./assets/note.png" alt="Revenue"
+                                class="metric-icon-img"></span>
+                        <span class="label">REVENUE</span>
+                        <span id="revenue-value" class="value">$0</span>
+                    </div>
+                    <div class="metric-item" title="Company Morale">
+                        <span class="icon icon-img"><img src="./assets/morale.jpeg" alt="Morale"
+                                class="metric-icon-img"></span>
+                        <span class="label">MORALE</span>
+                        <span id="morale-value" class="value">100%</span>
+                    </div>
+                    <div class="metric-item" title="Public Reputation">
+                        <span class="icon icon-img"><img src="./assets/reputation.jpeg" alt="Reputation"
+                                class="metric-icon-img"></span>
+                        <span class="label">REPUTATION</span>
+                        <span id="reputation-value" class="value">100%</span>
+                    </div>
+                    <!-- Timer -->
+                    <div class="metric-item timer-item" title="Time Remaining">
+                        <span class="icon icon-img"><img src="./assets/time.jpeg" alt="Time"
+                                class="metric-icon-img"></span>
+                        <span class="label">TIME</span>
+                        <span id="timer-value" class="value">03:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="objective-panel">
+                <div id="objective-title" class="objective-title">LEVEL 1: SURVIVAL PHASE</div>
+                <div id="objective-desc" class="objective-desc">Reach <span class="highlight">$50,000</span> revenue in
+                    3 minutes.</div>
+                <div class="progress-bar-container">
+                    <div id="revenue-progress" class="progress-bar"></div>
+                </div>
+            </div>
+
+            <div id="notifications"></div>
+
+            <div id="controls-hint">
+                [ Left Click ] Select Building &nbsp;|&nbsp; [ Scroll ] Zoom &nbsp;|&nbsp; [ Right Drag ] Rotate
+            </div>
+
+            <!-- Chat & Players (Multiplayer Only) -->
+            <div id="multiplayer-hud" class="hidden">
+                <div id="player-list-panel" class="glass-panel">
+                    <h3>ONLINE CEOs</h3>
+                    <div id="players-container"></div>
+                </div>
+
+                <div id="rival-stats-panel" class="glass-panel hidden">
+                    <h3>RIVAL STATS</h3>
+                    <div id="rival-stats-container"></div>
+                </div>
+                <div id="chat-panel" class="glass-panel">
+                    <div id="chat-messages"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Type a message...">
+                        <button id="send-chat-btn">SEND</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENT ALERT PANEL -->
+        <div id="event-alert" class="hidden">
+            <div id="event-alert-inner">
+                <div id="event-header">
+                    <span id="event-icon">⚠️</span>
+                    <span id="event-title">CRITICAL EVENT</span>
+                    <span id="event-urgency"></span>
+                </div>
+                <div id="event-body">
+                    <p id="event-desc"></p>
+                    <p id="event-impact" class="event-impact-text"></p>
+                </div>
+                <div id="event-actions"></div>
+                <button id="event-dismiss">DISMISS (ignore at your own risk)</button>
+            </div>
+        </div>
+
+        <!-- Building Context Menu (Hidden by default) -->
+        <div id="context-menu" class="glass-panel hidden">
+            <div class="menu-header">
+                <h2 id="building-name">Building Name</h2>
+                <button id="close-menu">×</button>
+            </div>
+            <div class="menu-content">
+                <div id="building-stats"></div>
+                <div id="building-actions" class="button-grid"></div>
+            </div>
+        </div>
+
+        <!-- SCREEN: Auth (Login / Register) -->
+        <div id="screen-auth" class="overlay auth-overlay hidden">
+            <div class="auth-card">
+                <div class="auth-logo">🏙️ EMPIRE PROTOCOL</div>
+
+                <!-- TAB SWITCHER -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tab-login">Login</button>
+                    <button class="auth-tab" id="tab-register">Create Account</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="login-form" class="auth-form">
+                    <div class="auth-error hidden" id="login-error"></div>
+                    <div class="input-group">
+                        <label>📧 Email</label>
+                        <input type="email" id="login-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>🔒 Password</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" id="login-btn" class="primary-btn">LET'S PLAY!</button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="register-form" class="auth-form hidden">
+                    <div class="auth-error hidden" id="register-error"></div>
+                    <div class="input-group">
+                        <label>📧 Email</label>
+                        <input type="email" id="reg-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>🔒 Password</label>
+                        <input type="password" id="reg-password" placeholder="At least 6 characters" required>
+                    </div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>🙋 First Name</label>
+                            <input type="text" id="reg-name" placeholder="e.g. Alex" maxlength="20" required>
+                        </div>
+                        <div class="input-group">
+                            <label>🎮 Username</label>
+                            <input type="text" id="reg-username" placeholder="e.g. CoolCEO88" maxlength="15" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>🎂 Age</label>
+                        <input type="number" id="reg-age" placeholder="7–14" min="7" max="14" required>
+                    </div>
+                    <div class="input-group">
+                        <label>🧑 Pick Your Avatar</label>
+                        <div class="avatar-grid" id="avatar-grid">
+                            <span class="avatar-opt selected" data-val="🧒">🧒</span>
+                            <span class="avatar-opt" data-val="👦">👦</span>
+                            <span class="avatar-opt" data-val="👧">👧</span>
+                            <span class="avatar-opt" data-val="🧑">🧑</span>
+                            <span class="avatar-opt" data-val="👶">👶</span>
+                            <span class="avatar-opt" data-val="🚀">🚀</span>
+                            <span class="avatar-opt" data-val="🦸">🦸</span>
+                            <span class="avatar-opt" data-val="🤖">🤖</span>
+                        </div>
+                        <input type="hidden" id="reg-avatar" value="🧒">
+                    </div>
+                    <button type="submit" id="register-btn" class="primary-btn">JOIN THE EMPIRE!</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SCREEN: Intro / Onboarding -->
+        <div id="screen-intro" class="overlay glass-panel hidden">
+            <div class="overlay-content">
+                <h1 class="title">WELCOME CANDIDATE</h1>
+                <p class="desc">The Empire Protocol is ready to initialize. Please choose your avatar and enter your
+                    designation.</p>
+
+                <div class="avatar-picker-container">
+                    <button type="button" id="prev-avatar" class="nav-btn">◀</button>
+                    <div class="avatar-preview-box">
+                        <img id="selected-avatar-img" src="assets/avatars/youngGuy.png" alt="Avatar">
+                    </div>
+                    <button type="button" id="next-avatar" class="nav-btn">▶</button>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="user-name" placeholder="ENTER YOUR NAME" maxlength="15">
+                </div>
+                <button id="initialize-btn" class="primary-btn">INITIALIZE CORE</button>
+            </div>
+        </div>
+
+
+        <!-- SCREEN: CEO Dashboard (Unified Hub) -->
+        <div id="screen-dashboard" class="overlay glass-panel hidden">
+            <div class="overlay-content dashboard-content">
+                <div class="dashboard-header">
+                    <div class="ceo-profile-card">
+                        <div class="ceo-avatar-frame">
+                            <img id="dash-avatar-img" src="assets/avatars/youngGuy.png" alt="CEO Avatar">
+                        </div>
+                        <div class="ceo-info">
+                            <h2 id="dash-ceo-name">CEO NAME</h2>
+                            <div class="ceo-rank"><span class="label">RANK:</span> <span id="dash-ceo-rank"
+                                    class="highlight">JUNIOR EXECUTIVE</span></div>
+                        </div>
+                    </div>
+                    <button class="logout-btn" id="logout-btn-dashboard">TERMINATE SESSION</button>
+                </div>
+
+                <div class="dashboard-layout">
+                    <!-- KPI ROW -->
+                    <div class="dashboard-kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">PROTOCOLS UNLOCKED</div>
+                            <div id="dash-kpi-unlocked" class="kpi-value">--</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">LATEST PROTOCOL</div>
+                            <div id="dash-kpi-latest" class="kpi-value">--</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">LAST SCORE</div>
+                            <div id="dash-kpi-last-score" class="kpi-value">--</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">BEST SCORE</div>
+                            <div id="dash-kpi-best-score" class="kpi-value">--</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-main-grid">
+                        <!-- STRATEGIC INSIGHTS (AI SUMMARY) -->
+                        <div class="dash-card ai-insights">
+                            <div class="card-header">
+                                <span class="icon">🧠</span>
+                                <h3>STRATEGIC INSIGHTS</h3>
+                            </div>
+                            <div id="latest-summary-box" class="summary-preview">
+                                <p class="placeholder-text">Complete a protocol to receive AI strategic analysis.</p>
+                            </div>
+                        </div>
+
+                        <!-- DEPLOYMENT OPTIONS -->
+                        <div class="dash-card dash-actions">
+                            <div class="card-header">
+                                <span class="icon">🚀</span>
+                                <h3>DEPLOYMENT</h3>
+                            </div>
+                            <div class="deployment-grid">
+                                <div class="mode-card primary" id="mode-map">
+                                    <div class="mode-video-bg"></div>
+                                    <div class="mode-content">
+                                        <div class="mode-icon">🗺️</div>
+                                        <h3>MY MAP</h3>
+                                        <p>Continue Campaign Progress</p>
+                                    </div>
+                                </div>
+                                <div class="mode-card primary" id="mode-battle">
+                                    <div class="mode-video-bg"></div>
+                                    <div class="mode-content">
+                                        <div class="mode-icon">⚔️</div>
+                                        <h3>BATTLEGROUND</h3>
+                                        <p>Enter Competitive Arena</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: Level Selection Roadway -->
+        <div id="screen-map" class="overlay glass-panel hidden">
+            <div class="overlay-content roadway-content">
+                <div class="screen-header">
+                    <h1 class="title">CAMPAIGN ROADWAY</h1>
+                    <button class="action-btn" id="back-to-dashboard">BACK TO DASHBOARD</button>
+                </div>
+
+                <div class="roadway-container">
+                    <div class="road-path"></div>
+                    <div class="level-nodes-horizontal">
+                        <div class="level-node-wrap">
+                            <div class="level-node active" data-level="1">
+                                <div class="node-num">1</div>
+                                <div class="node-label">PHASE I</div>
+                            </div>
+                        </div>
+                        <div class="level-node-wrap">
+                            <div class="level-node locked" data-level="2">
+                                <div class="node-num">2</div>
+                                <div class="node-label">PHASE II</div>
+                            </div>
+                        </div>
+                        <div class="level-node-wrap">
+                            <div class="level-node locked" data-level="3">
+                                <div class="node-num">3</div>
+                                <div class="node-label">PHASE III</div>
+                            </div>
+                        </div>
+                        <div class="level-node-wrap">
+                            <div class="level-node locked" data-level="4">
+                                <div class="node-num">4</div>
+                                <div class="node-label">PHASE IV</div>
+                            </div>
+                        </div>
+                        <div class="level-node-wrap">
+                            <div class="level-node locked" data-level="5">
+                                <div class="node-num">5</div>
+                                <div class="node-label">PHASE V</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roadway-footer">
+                    <div id="selected-level-info" class="level-info-card">
+                        <h3 id="road-level-title">LEVEL 1: SURVIVAL</h3>
+                        <p id="road-level-desc">Initialize your first corporate sector.</p>
+                        <button id="start-level-btn" class="primary-btn">ENGAGE PROTOCOL</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: BattleGround Lobby -->
+        <div id="screen-battle-lobby" class="overlay glass-panel hidden">
+            <div class="overlay-content">
+                <div class="screen-header">
+                    <h1 class="title">BATTLEGROUND LOBBY</h1>
+                    <button class="logout-btn" id="leave-battle-btn">LEAVE</button>
+                </div>
+
+                <!-- Create/Join Selector -->
+                <div id="lobby-init-ui">
+                    <div class="mode-grid">
+                        <div class="mode-card" id="btn-create-room">
+                            <div class="mode-icon">🏠</div>
+                            <h3>CREATE ROOM</h3>
+                            <p>Generate a code and invite friends.</p>
+                        </div>
+                        <div class="mode-card" id="btn-show-join">
+                            <div class="mode-icon">🔑</div>
+                            <h3>JOIN ROOM</h3>
+                            <p>Enter a code to join an arena.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join Input UI -->
+                <div id="lobby-join-ui" class="hidden">
+                    <div class="input-group">
+                        <label>ROOM CODE</label>
+                        <input type="text" id="join-room-code" placeholder="EX: A1B2C3" maxlength="6">
+                    </div>
+                    <div class="button-grid">
+                        <button id="btn-join-room" class="primary-btn">JOIN ARENA</button>
+                        <button id="btn-back-to-lobby" class="action-btn">BACK</button>
+                    </div>
+                </div>
+
+                <!-- Room State UI -->
+                <div id="lobby-waiting-ui" class="hidden">
+                    <div class="room-info">
+                        <h2>ROOM CODE: <span id="display-room-code" class="highlight">------</span></h2>
+                        <p id="player-count">Waiting for CEOs (1/4)...</p>
+                    </div>
+                    <div id="lobby-player-list"></div>
+                    <div class="button-grid">
+                        <button id="start-battle-btn" class="primary-btn locked">START BATTLE (Host Only)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: Level Selection Map -->
+        <div id="screen-map" class="overlay glass-panel hidden">
+            <div class="overlay-content">
+                <div class="screen-header">
+                    <h1 class="title">CAMPAIGN PROGRESS</h1>
+                    <button class="logout-btn" id="logout-btn-map">LOGOUT</button>
+                </div>
+                <div class="level-map">
+                    <div class="level-node active" data-level="1">1</div>
+                    <div class="level-node locked" data-level="2">2</div>
+                    <div class="level-node locked" data-level="3">3</div>
+                    <div class="level-node locked" data-level="4">4</div>
+                    <div class="level-node locked" data-level="5">5</div>
+                </div>
+                <div class="map-footer">
+                    <button id="back-to-modes" class="action-btn">BACK</button>
+                    <button id="start-level-btn" class="primary-btn">START LEVEL 1</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: Level Rules Briefing (shown before starting a level from MY MAP) -->
+        <div id="screen-rules" class="overlay glass-panel hidden">
+            <div class="overlay-content rules-content">
+                <h1 class="title" id="rules-title">MISSION RULES</h1>
+                <div id="rules-body" class="rules-body"></div>
+                <div class="button-grid">
+                    <button id="rules-cancel" class="action-btn">BACK TO MAP</button>
+                    <button id="rules-start" class="primary-btn">START LEVEL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tutorial Popup -->
+        <div id="tutorial-popup" class="hidden">
+            <div class="tutorial-bubble">
+                <p id="tutorial-text"></p>
+                <button id="tutorial-next" class="primary-btn small">NEXT</button>
+            </div>
+        </div>
+    </div>
+    <!-- Auth Screen Logic -->
+
+</body>
+
+</html>
